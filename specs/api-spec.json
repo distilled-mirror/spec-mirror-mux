@@ -80,7 +80,7 @@
     },
     {
       "name": "Exports",
-      "description": "Exports allow you to download the daily CSV files that are generated from the video views that occurred in the previous day. Please contact [support](https://www.mux.com/support) for information about enabling exports for your organization."
+      "description": "Exports allow you to download the daily CSV files that are generated from the video views that occurred in the previous day. Please contact [support](mailto:support@mux.com) for information about enabling exports for your organization."
     },
     {
       "name": "Metrics",
@@ -18369,18 +18369,19 @@
             "enum": [
               "ingesting",
               "transcoding",
+              "optimizing",
               "completed",
               "live",
               "errored"
             ],
-            "description": "The detailed state of the asset ingest process. This field is useful for relaying more granular processing information to end users when a [non-standard input is encountered](https://www.mux.com/docs/guides/minimize-processing-time#non-standard-input).\n\n- `ingesting`: Asset is being ingested (initial processing before or after transcoding). While in this state, the `progress` percentage will be 0.\n- `transcoding`: Asset is undergoing non-standard transcoding.\n- `completed`: Asset processing is complete (`status` is `ready`). While in this state, the `progress` percentage will be 100.\n- `live`: Asset is a live stream currently in progress. While in this state, the `progress` percentage will be -1.\n- `errored`: Asset has encountered an error (`status` is `errored`). While in this state, the `progress` percentage will be -1.\n"
+            "description": "The detailed state of the asset ingest process. This field is useful for relaying more granular processing information to end users when a [non-standard input is encountered](https://www.mux.com/docs/guides/minimize-processing-time#non-standard-input).\n\n- `ingesting`: Asset is being ingested (initial processing before or after transcoding). While in this state, the `progress` percentage will be 0.\n- `transcoding`: Asset is undergoing non-standard transcoding. For assets with a `delivery_profile` of `hls_podcast`, the `progress` percentage runs from 0 to 50 while transcoding.\n- `optimizing`: Asset is finishing additional processing its `delivery_profile` requires, such as measuring each rendition's bitrate for `hls_podcast` assets. `status` stays `preparing`, and the `progress` percentage runs from 50 to 100.\n- `completed`: Asset processing is complete (`status` is `ready`). While in this state, the `progress` percentage will be 100.\n- `live`: Asset is a live stream currently in progress. While in this state, the `progress` percentage will be -1.\n- `errored`: Asset has encountered an error (`status` is `errored`). While in this state, the `progress` percentage will be -1.\n"
           },
           "progress": {
             "type": "number",
             "format": "double",
             "minimum": -1,
             "maximum": 100,
-            "description": "Represents the estimated completion percentage. Returns `0 - 100` when in `ingesting`, `transcoding`, or `completed` state, and `-1` when in `live` or `errored` state."
+            "description": "Represents the estimated completion percentage. Returns `0 - 100` when in `ingesting`, `transcoding`, `optimizing`, or `completed` state, and `-1` when in `live` or `errored` state."
           }
         },
         "required": [
@@ -24945,7 +24946,7 @@
           "output_language_code": {
             "type": "string",
             "minLength": 1,
-            "description": "BCP 47 language code for generated text. Auto-detected from available evidence when omitted."
+            "description": "BCP 47 language code for generated text. Auto-detected from available evidence when omitted. Transcript cues and verbatim quotes remain in their source language."
           },
           "output_steering": {
             "$ref": "#/components/schemas/AnalyzeStructureOutputSteering"
@@ -25062,7 +25063,7 @@
             "items": {
               "$ref": "#/components/schemas/AnalyzeStructureChapter"
             },
-            "description": "Generated chapters in timeline order. Always present and empty below the chapter threshold."
+            "description": "Generated chapters in timeline order. Chapters are generated only when the analyzed range is at least 60 seconds long and has at least two coverage segments. Always present, and may be empty even when those conditions are met."
           },
           "scenes": {
             "type": "array",
@@ -25124,7 +25125,7 @@
           "output_language_code": {
             "type": "string",
             "minLength": 1,
-            "description": "BCP 47 language code for generated text. Auto-detected from available evidence when omitted."
+            "description": "BCP 47 language code for generated text. Auto-detected from available evidence when omitted. Transcript cues and verbatim quotes remain in their source language."
           },
           "output_steering": {
             "$ref": "#/components/schemas/AnalyzeStructureOutputSteering"
@@ -25786,7 +25787,7 @@
                 "$ref": "#/components/schemas/OutputSteeringScope"
               },
               {
-                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Answers are generated only from media within this window, while returned timestamps remain absolute asset timestamps."
+                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Answers are generated only from media within this window, while returned timestamps remain absolute asset timestamps. At least one of start_time and end_time is required, and start_time must be less than end_time. An end_time past the end of the media is clamped to it, and a window that starts at or after the end of the media is rejected."
               }
             ]
           }
@@ -27007,7 +27008,7 @@
                 },
                 "replace": {
                   "type": "string",
-                  "description": "Replacement text to insert when a match is found."
+                  "description": "Replacement text to insert when a match is found. Use an empty string to delete the match."
                 },
                 "case_sensitive": {
                   "type": "boolean",
@@ -27218,7 +27219,7 @@
                 },
                 "replace": {
                   "type": "string",
-                  "description": "Replacement text to insert when a match is found."
+                  "description": "Replacement text to insert when a match is found. Use an empty string to delete the match."
                 },
                 "case_sensitive": {
                   "type": "boolean",
@@ -27308,7 +27309,7 @@
           "find": {
             "type": "string",
             "minLength": 1,
-            "description": "Existing speaker label without the surrounding square brackets."
+            "description": "Existing speaker label without the surrounding square brackets. Must match the label in the track exactly, including case."
           },
           "replace": {
             "type": "string",
@@ -27326,7 +27327,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "Machine-readable error type."
+            "description": "Machine-readable error type. New types may be added, so handle unknown values."
+          },
+          "code": {
+            "type": "string",
+            "description": "Identifies the specific condition that failed, when it has a public code. Absent for other errors. New codes may be added, so handle unknown values."
           },
           "messages": {
             "type": "array",
@@ -27494,7 +27499,7 @@
           },
           "update_asset_thumbnail": {
             "type": "boolean",
-            "description": "When true, the highest-scoring thumbnail's timestamp is written to the Mux asset's thumbnail_time once the job completes, making that frame the asset's default poster image. The new thumbnail will appear for some clients sooner than others, depending on local cache settings."
+            "description": "When true, the highest-scoring thumbnail's timestamp is written to the Mux asset's thumbnail_time once the job completes, making that frame the asset's default poster image. The new thumbnail will appear for some clients sooner than others, depending on local cache settings. Defaults to false."
           }
         },
         "description": "Parameters for find-best-thumbnails, excluding engine-supplied asset_id and source track_id where applicable."
@@ -27628,7 +27633,7 @@
           },
           "update_asset_thumbnail": {
             "type": "boolean",
-            "description": "When true, the highest-scoring thumbnail's timestamp is written to the Mux asset's thumbnail_time once the job completes, making that frame the asset's default poster image. The new thumbnail will appear for some clients sooner than others, depending on local cache settings."
+            "description": "When true, the highest-scoring thumbnail's timestamp is written to the Mux asset's thumbnail_time once the job completes, making that frame the asset's default poster image. The new thumbnail will appear for some clients sooner than others, depending on local cache settings. Defaults to false."
           }
         },
         "required": [
@@ -27690,7 +27695,7 @@
                 "$ref": "#/components/schemas/OutputSteeringScope"
               },
               {
-                "description": "Optional sampling window in seconds on the original asset timeline, normalized inward to whole-millisecond half-open bounds. The range must contain a video frame at the asset frame rate. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Returned thumbnail timestamps remain absolute asset timestamps."
+                "description": "Optional sampling window in seconds on the original asset timeline, normalized inward to whole-millisecond half-open bounds. The range must contain a video frame at the asset frame rate. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Returned thumbnail timestamps remain absolute asset timestamps. At least one of start_time and end_time is required, and start_time must be less than end_time. An end_time past the end of the media is clamped to it, and a window that starts at or after the end of the media is rejected."
               }
             ]
           },
@@ -28110,7 +28115,7 @@
                 "$ref": "#/components/schemas/OutputSteeringScope"
               },
               {
-                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Returned moment timestamps remain absolute asset timestamps."
+                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Returned moment timestamps remain absolute asset timestamps. At least one of start_time and end_time is required, and start_time must be less than end_time. An end_time past the end of the media is clamped to it, and a window that starts at or after the end of the media is rejected."
               }
             ]
           },
@@ -28727,7 +28732,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/GeneratedTextVariant"
-            }
+            },
+            "description": "Generated versions of the complete artifact set, one per requested variant."
           }
         },
         "required": [
@@ -28873,7 +28879,7 @@
                 "$ref": "#/components/schemas/OutputSteeringScope"
               },
               {
-                "description": "Optional execution window in seconds on the original asset timeline. Text is grounded only in transcript cues and visual context that overlap this window."
+                "description": "Optional execution window in seconds on the original asset timeline. Text is grounded only in transcript cues and visual context that overlap this window. At least one of start_time and end_time is required, and start_time must be less than end_time. An end_time past the end of the media is clamped to it, and a window that starts at or after the end of the media is rejected."
               }
             ]
           },
@@ -28895,7 +28901,7 @@
                 "$ref": "#/components/schemas/OutputSteeringBrandTerms"
               },
               {
-                "description": "Preferred brand or domain terms to use exactly when the source supports them."
+                "description": "Preferred brand or domain terms to use exactly when the source supports them. The combined length of all terms must be 240 characters or fewer."
               }
             ]
           }
@@ -28969,7 +28975,8 @@
           },
           "content": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Generated text for this artifact."
           }
         },
         "required": [
@@ -28987,7 +28994,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/GeneratedTextArtifact"
-            }
+            },
+            "description": "Generated deliverables for this variant, one per requested artifact."
           }
         },
         "required": [
@@ -29531,7 +29539,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "Stable public error category identifier."
+            "description": "Stable public error category identifier. New types may be added, so handle unknown values."
+          },
+          "code": {
+            "type": "string",
+            "description": "Identifies the specific condition that failed, when it has a public code. Absent for other failures. New codes may be added, so handle unknown values."
           },
           "message": {
             "type": "string",
@@ -29711,7 +29723,7 @@
           "language_code": {
             "type": "string",
             "minLength": 1,
-            "description": "BCP 47 language code of the caption source. An explicit language must match a ready source exactly, including case; for example, en does not match en-US. Translation target exclusion and track replacement instead compare base languages case-insensitively. When omitted, automatic selection applies. Uses the first ready subtitle in asset track order without English preference. Audio-only assets with one ready text track lacking subtitle metadata can use that legacy transcript."
+            "description": "BCP 47 language code of the caption source. An explicit language must match a ready source exactly, including case; for example, en does not match en-US. Translation target exclusion and track replacement instead compare base languages case-insensitively. When omitted, automatic selection applies. Uses the first ready subtitle in asset track order without English preference. Audio-only assets with one ready text track lacking subtitle metadata can use that legacy transcript. If no ready track matches, the request is rejected. Ignored for video assets when include_transcript is false."
           },
           "thresholds": {
             "type": "object",
@@ -30072,7 +30084,7 @@
           "language_code": {
             "type": "string",
             "minLength": 1,
-            "description": "BCP 47 language code of the caption source. An explicit language must match a ready source exactly, including case; for example, en does not match en-US. Translation target exclusion and track replacement instead compare base languages case-insensitively. When omitted, automatic selection applies. Uses the first ready subtitle in asset track order without English preference. Audio-only assets with one ready text track lacking subtitle metadata can use that legacy transcript."
+            "description": "BCP 47 language code of the caption source. An explicit language must match a ready source exactly, including case; for example, en does not match en-US. Translation target exclusion and track replacement instead compare base languages case-insensitively. When omitted, automatic selection applies. Uses the first ready subtitle in asset track order without English preference. Audio-only assets with one ready text track lacking subtitle metadata can use that legacy transcript. If no ready track matches, the request is rejected. Ignored for video assets when include_transcript is false."
           },
           "thresholds": {
             "type": "object",
@@ -30149,7 +30161,7 @@
                 "$ref": "#/components/schemas/OutputSteeringScope"
               },
               {
-                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Moderation is restricted to media within this window, while returned timestamps remain absolute asset timestamps."
+                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. Moderation is restricted to media within this window, while returned timestamps remain absolute asset timestamps. At least one of start_time and end_time is required, and start_time must be less than end_time. An end_time past the end of the media is clamped to it, and a window that starts at or after the end of the media is rejected."
               }
             ]
           }
@@ -30165,7 +30177,7 @@
         },
         "minItems": 1,
         "maxItems": 10,
-        "description": "Preferred brand or domain terms to use when supported by the source content."
+        "description": "Preferred brand or domain terms to use when supported by the source content. The combined length of all terms must be 240 characters or fewer."
       },
       "OutputSteeringScope": {
         "type": "object",
@@ -30181,7 +30193,7 @@
             "description": "End of the execution window in seconds from the beginning of the media. When omitted, the window extends to the end."
           }
         },
-        "description": "Optional media execution window. Results remain timestamped against the original media timeline."
+        "description": "Optional media execution window in seconds on the original asset timeline. At least one of start_time and end_time is required, and start_time must be less than end_time. An end_time past the end of the media is clamped to it, and a window that starts at or after the end of the media is rejected. Results remain timestamped against the original media timeline."
       },
       "OutputSteeringTaxonomy": {
         "type": "object",
@@ -30442,7 +30454,7 @@
           },
           "update_asset_meta": {
             "type": "boolean",
-            "description": "When true, the generated title is written to the Mux asset's metadata (asset.meta.title) once the summary completes. Best-effort: a metadata-write failure does not fail the summary."
+            "description": "When true, the generated title is written to the Mux asset's metadata (asset.meta.title) once the summary completes. Defaults to false. Best-effort: a metadata-write failure does not fail the summary. Check outputs.asset_updates.title for the outcome."
           }
         },
         "description": "Parameters for summarize, excluding engine-supplied asset_id and source track_id where applicable."
@@ -30613,7 +30625,7 @@
           },
           "update_asset_meta": {
             "type": "boolean",
-            "description": "When true, the generated title is written to the Mux asset's metadata (asset.meta.title) once the summary completes. Best-effort: a metadata-write failure does not fail the summary."
+            "description": "When true, the generated title is written to the Mux asset's metadata (asset.meta.title) once the summary completes. Defaults to false. Best-effort: a metadata-write failure does not fail the summary. Check outputs.asset_updates.title for the outcome."
           }
         },
         "required": [
@@ -30658,7 +30670,7 @@
                 "$ref": "#/components/schemas/OutputSteeringScope"
               },
               {
-                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. The summary and tags are generated only from media within this window."
+                "description": "Optional execution window in seconds on the original asset timeline. Omit start_time to begin at the asset start and omit end_time to continue through the asset end. The summary and tags are generated only from media within this window. At least one of start_time and end_time is required, and start_time must be less than end_time. An end_time past the end of the media is clamped to it, and a window that starts at or after the end of the media is rejected."
               }
             ]
           },
@@ -30837,7 +30849,7 @@
           "upload_to_mux": {
             "type": "boolean",
             "default": true,
-            "description": "Whether to automatically upload the translated audio track to the Mux asset. Defaults to true. Must be false for audio-only assets; the job returns downloadable audio instead."
+            "description": "Whether to automatically upload the translated audio track to the Mux asset. Defaults to true. Must be false for audio-only assets, clips, and assets created from live streams, because Mux cannot add audio tracks to them; the job then returns downloadable audio instead. To keep a clip's dub on Mux, dub its source asset."
           },
           "replace_existing_tracks": {
             "$ref": "#/components/schemas/TranslateAudioReplaceExistingTracks"
@@ -30996,7 +31008,7 @@
           "upload_to_mux": {
             "type": "boolean",
             "default": true,
-            "description": "Whether to automatically upload the translated audio track to the Mux asset. Defaults to true. Must be false for audio-only assets; the job returns downloadable audio instead."
+            "description": "Whether to automatically upload the translated audio track to the Mux asset. Defaults to true. Must be false for audio-only assets, clips, and assets created from live streams, because Mux cannot add audio tracks to them; the job then returns downloadable audio instead. To keep a clip's dub on Mux, dub its source asset."
           },
           "replace_existing_tracks": {
             "$ref": "#/components/schemas/TranslateAudioReplaceExistingTracks"
@@ -36069,7 +36081,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "Stable public error category identifier."
+            "description": "Stable public error category identifier. New types may be added, so handle unknown values."
+          },
+          "code": {
+            "type": "string",
+            "description": "Identifies the specific condition that failed, when it has a public code. Absent for other failures. New codes may be added, so handle unknown values."
           },
           "message": {
             "type": "string",
